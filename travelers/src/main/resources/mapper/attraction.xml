@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.travelers.attraction.model.mapper.AttractionMapper">
+
+	<resultMap type="sidoDto" id="sido">
+		<result column="sido_code" property="sidoCode"/>
+		<result column="sido_name" property="sidoName"/>
+	</resultMap>
+	
+	<resultMap type="gugunDto" id="gugun">
+		<result column="gugun_code" property="gugunCode"/>
+		<result column="gugun_name" property="gugunName"/>
+		<result column="sido_code" property="sidoCode"/>
+	</resultMap>
+
+	<resultMap type="AttractionDto" id="attraction">
+		<result column="content_id" property="contentId"/>
+		<result column="content_type_id" property="contentTypeId"/>
+		<result column="title" property="title"/>
+		<result column="addr1" property="addr1"/>
+		<result column="addr2" property="addr2"/>
+		<result column="zipcode" property="zipcode"/>
+		<result column="tel" property="tel"/>
+		<result column="first_image" property="image1"/>
+		<result column="first_image2" property="image2"/>
+		<result column="readcount" property="readcount"/>
+		<result column="sido_code" property="sidoCode"/>
+		<result column="gugun_code" property="gugunCode"/>
+		<result column="latitude" property="latitude"/>
+		<result column="longitude" property="longitude"/>
+		<result column="mlevel" property="mlevel"/>
+		<result column="overview" property="overview"/>
+		<result column="create_time" property="createTime"/>
+		<result column="modify_time" property="modifyTime"/>
+	</resultMap>
+	
+	<select id="getSido" resultMap="sido">
+		select * from `sido`
+	</select>
+	
+	<select id="getGugun" parameterType="int" resultMap="gugun">
+		select * from `gugun`
+		where `sido_code` = #{sidoCode}
+	</select>
+	<select id="getAttractionList" parameterType="hashmap" resultMap="attraction">
+		select ai.*, ad.*, detail.*
+		from attraction_info ai 
+		join attraction_description ad
+		using(content_id)
+		join attraction_detail detail
+		using(content_id)
+		where sido_code = #{sidoCode} and gugun_code = #{gugunCode} 
+		<if test="query!=null and !query.equals('')">
+			and (title like #{query} or overview like #{query})
+		</if>
+		<if test="contentType != 0">
+			and content_type_id = #{contentType}
+		</if>
+	</select>
+
+	<select id="getAttraction" resultMap="attraction">
+		select ai.*, ad.*, detail.*
+		from attraction_info ai
+		join attraction_description ad
+		using(content_id)
+		join attraction_detail detail
+		using(content_id)
+		where content_id = #{contentId}
+	</select>
+
+	<select id="getScheduleInfo" parameterType="java.util.List" resultMap="attraction">
+		select ai.*, ad.*, detail.*
+		from attraction_info ai, attraction_description ad, attraction_detail detail
+		where ai.content_id = ad.content_id and ai.content_id = detail.content_id
+		and (
+		<foreach collection="list" item="item" separator=" or ">
+			ai.content_id = ${item}
+		</foreach>
+		)
+	</select>
+</mapper>

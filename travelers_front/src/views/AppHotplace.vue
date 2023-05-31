@@ -1,0 +1,28 @@
+<template>
+  <div>
+    <b-container class="bv-example-row mt-3 text-center">
+      <h3>핫 플레이스</h3>
+      <router-view />
+    </b-container>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "AppHotplace",
+  components: { },
+  data() {
+    return {
+    };
+  },
+  created() {},
+  methods: {},
+};
+</script>
+
+<style scoped>
+.underline-hotpink {
+  display: inline-block;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 70%, rgba(154, 127, 39, 0.3) 30%);
+}
+</style>

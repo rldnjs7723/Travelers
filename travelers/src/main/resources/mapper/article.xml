@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.travelers.article.model.mapper.ArticleMapper">
+
+	<resultMap type="articleDto" id="article">
+		<result column="article_no" property="articleNo"/>
+		<result column="article_type" property="articleType"/>
+		<result column="user_id" property="userId"/>
+		<result column="title" property="title"/>
+		<result column="write_time" property="writeTime"/>
+		<result column="content" property="content"/>
+		<result column="hit" property="hit"/>
+		<result column="like" property="like"/>
+	</resultMap>
+
+	<resultMap type="ArticleBookmarkDto" id="articleBookmark">
+		<result column="article_no" property="articleNo"/>
+		<result column="content_id" property="contentId"/>
+		<result column="article_type" property="articleType"/>
+		<result column="email" property="email"/>
+		<result column="is_like" property="isLike"/>
+		<result column="is_bookmark" property="isBookmark"/>
+	</resultMap>
+
+	<resultMap type="commentDto" id="comment">
+		<result column="article_no" property="articleNo"/>
+		<result column="comment_no" property="commentNo"/>
+		<result column="parent_comment_no" property="parentCommentNo"/>
+		<result column="user_id" property="userId"/>
+		<result column="write_time" property="writeTime"/>
+		<result column="content" property="content"/>
+		<result column="like" property="like"/>
+	</resultMap>
+
+	<resultMap type="articleDto" id="viewArticle" extends="article">
+		<collection property="fileInfos" column="article_no" javaType="list" ofType="fileInfoDto" select="fileInfoList"/>
+	</resultMap>
+
+	<resultMap type="hotPlaceDto" id="hotPlace" extends="article">
+		<result column="article_no" property="articleNo"/>
+		<result column="content_id" property="contentId"/>
+		<result column="content_type_id" property="contentTypeId"/>
+		<result column="rate" property="rate"/>
+		<result column="visit_date" property="visitDate"/>
+	</resultMap>
+
+	<resultMap type="scheduleDto" id="schedule" extends="article">
+		<result column="article_no" property="articleNo"/>
+		<result column="start_date" property="startDate"/>
+		<result column="end_date" property="endDate"/>
+		<result column="path" property="path" />
+	</resultMap>
+
+	<resultMap type="fileInfoDto" id="file">
+		<result column="save_folder" property="saveFolder"/>
+		<result column="original_file" property="originalFile"/>
+		<result column="save_file" property="saveFile"/>
+	</resultMap>
+
+	<select id="listArticle" parameterType="map" resultMap="article">
+		select `article_no`, `article_type`, `user_id`, `title`, `write_time`, `content`, `hit`, `like`
+		from article
+		<if test="word != null and word != ''">
+			<if test="key == 'title'">
+				where `title` like concat('%', #{word}, '%')
+			</if>
+			<if test="key == 'content'">
+				where `content` like concat('%', #{word}, '%')
+-- 				where ${key} = #{word}
+			</if>
+			<if test="key == 'userId'">
+				where `user_id` = #{word}
+			</if>
+			<if test="key == 'all'">
+				where `user_id` = #{word}
+				or `title` like concat('%', #{word}, '%')
+				or `content` like concat('%', #{word}, '%')
+			</if>
+		</if>
+		order by `article_no` desc
+		limit #{start}, #{spp}
+	</select>
+
+	<select id="getArticleBookmark" resultMap="articleBookmark">
+		select * from `article_bookmark`
+		where `email` = #{email}
+		and `article_no` = #{articleNo}
+	</select>
+
+	<select id="getArticleBookmarks" resultMap="articleBookmark">
+		select * from `article_bookmark`
+		where `email` = #{email}
+		and `is_bookmark` = true
+<!--		<trim prefix="where" suffixOverrides="and">-->
+<!--			<if test="email != null">`email` = #{email} and </if>-->
+<!--			<if test="articleNo != 0">`article_no` = #{articleNo} and </if>-->
+<!--		</trim>-->
+	</select>
+
+	<select id="listComment" parameterType="int" resultMap="comment">
+		select * from `comment`
+		where `article_no` = #{articleNo}
+	</select>
+	
+	<select id="getArticle" parameterType="int" resultMap="viewArticle">
+		select * from `article`
+		where `article_no` = #{articleNo}
+	</select>
+
+	<select id="getHotPlace" parameterType="int" resultMap="hotPlace">
+		select * 
+		from `article` join `hotplace`
+		using (`article_no`)
+		where `article_no` = #{articleNo}
+	</select>
+	
+	<select id="getSchedule" parameterType="int" resultMap="schedule">		
+		select * 
+		from `article` join `schedule`
+		using (`article_no`)
+		where `article_no` = #{articleNo}
+	</select>
+
+	<select id="getComment" parameterType="int" resultMap="comment">
+		select * from `comment`
+		where `comment_no` = #{commentNo}
+	</select>
+
+	<select id="fileInfoList" resultMap="file">
+		select save_folder, original_file, save_file
+		from file_info
+		where article_no = #{articleNo}
+	</select>
+
+	<select id="getTotalRate" parameterType="int" resultType="int">
+		select `rate` from `hotplace`
+		where `content_id` = #{contentId}
+	</select>
+
+	<insert id="writeArticle" parameterType="articleDto">
+		insert into `article` (`article_type`, `user_id`, `title`, `content`)
+		values(#{articleType}, #{userId}, #{title}, #{content})
+		<selectKey resultType="int" keyProperty="articleNo" order="AFTER">
+			select last_insert_id()
+		</selectKey>
+		<!-- <if test="articleType != null and articleType.equals('hotplace'.toString())">
+			`user_id` = #{userId},
+			insert into `hotplace` (`article_no`, `visit_date`, `image`)
+			values (#{articleNo}, #{visitDate}, #{image})
+			values (#{articleNo}, #{visitDate}, null)
+		</if>
+		<if test="articleType != null and articleType.equals('schedule'.toString())">
+			`author_name` = #{authorName},
+			insert into `schedule` (`article_no`, `start_date`, `end_date`, `path`)
+			values (#{articleNo}, #{startDate}, #{endDate}, #{path})
+		</if> -->
+	</insert>
+
+	<insert id="writeComment" parameterType="commentDto">
+		insert into `comment` (`article_no`, `user_id`, `content`)
+		values (#{articleNo}, #{userId}, #{content})
+		<selectKey resultType="int" keyProperty="contentNo" order="AFTER">
+			select last_insert_id()
+		</selectKey>
+	</insert>
+	
+	<insert id="writeHotplace" parameterType="hotplaceDto">
+		insert into `hotplace` (`article_no`, `content_id`, `content_type_id`, `rate`, `visit_date`, `image`)
+		values (#{articleNo}, #{contentId}, #{contentTypeId}, #{rate}, #{visitDate}, null)
+	</insert>
+	
+	<insert id="writeSchedule" parameterType="scheduleDto">
+		insert into `schedule` (`article_no`, `start_date`, `end_date`, `path`)
+		values (#{articleNo}, #{startDate}, #{endDate}, #{path})
+	</insert>
+
+	<insert id="registerFile" parameterType="articleDto">
+		insert into `file_info` (article_no, save_folder, original_file, save_file)
+		values
+		<foreach collection="fileInfos" item="fileinfo" separator=" , ">
+			(#{articleNo}, #{fileinfo.saveFolder}, #{fileinfo.originalFile}, #{fileinfo.saveFile})
+		</foreach>
+	</insert>
+
+	<insert id="addArticleBookmark" parameterType="ArticleBookmarkDto">
+		insert into `article_bookmark` (`article_no`, `email`, `content_id`, `article_type`, `is_like`, `is_bookmark`)
+		values (#{articleNo}, #{email}, #{contentId}, #{articleType}, #{isLike}, #{isBookmark})
+	</insert>
+
+	<update id="modifyArticle" parameterType="articleDto">
+		update `article`
+		<trim prefix="set" suffixOverrides=",">
+			<if test="title != null">`title` = #{title},</if>
+			<if test="content != null">`content` = #{content},</if>
+<!--			<if test="like != null">`like` = #{like},</if>-->
+		</trim>
+		where `article_no` = #{articleNo}
+	</update>
+
+	<update id="setArticleLike" parameterType="ArticleBookmarkDto">
+		update `article_bookmark`
+		set `is_like` = true
+		where `article_no` = #{articleNo}
+		and `email` = #{email}
+	</update>
+
+	<update id="toggleArticleBookmark" parameterType="ArticleBookmarkDto">
+		update `article_bookmark`
+		set `is_bookmark` = not `is_bookmark`
+		where `article_no` = #{articleNo}
+		and `email` = #{email}
+	</update>
+
+	<update id="modifyComment" parameterType="commentDto">
+		update `comment`
+		<trim prefix="set" suffixOverrides=",">
+			<if test="content != null">`content` = #{content},</if>
+			<if test="like != null">`like` = #{like},</if>
+		</trim>
+		where `comment_no` = #{commentNo}
+	</update>
+	
+	<update id="modifyHotplace" parameterType="hotplaceDto">
+		update `hotplace`
+		<trim prefix="set" suffixOverrides=",">
+<!--			<if test="contentTypeId != null">`content_type_id` = #{contentTypeId},</if>-->
+			<if test="visitDate != null">`visit_date` = #{visitDate},</if>
+			<if test="rate != 0">`rate` = #{rate},</if>
+		</trim>
+		where `article_no` = #{articleNo}
+	</update>
+
+	<update id="updateHit" parameterType="int">
+		update `article`
+		set `hit` = `hit` + 1
+		where `article_no` = #{articleNo}
+	</update>
+	
+	<update id="updateLike" parameterType="int">
+		update `article`
+		set `like` = `like` + 1
+		where `article_no` = #{articleNo}
+	</update>
+
+	<delete id="deleteArticle">
+		delete from `article`
+		where `article_no` = #{articleNo}
+	</delete>
+
+	<delete id="deleteComment">
+		delete from `comment`
+		where `comment_no` = #{commentNo}
+	</delete>
+	
+	<delete id="deleteHotplace">
+		delete from `hotplace`
+		where `article_no` = #{articleNo}
+	</delete>
+	
+	<delete id="deleteSchedule">
+		delete from `schedule`
+		where `article_no` = #{articleNo}
+	</delete>
+
+	<delete id="deleteFile" parameterType="int">
+		delete from file_info
+		where article_no = #{articleNo}
+	</delete>
+
+</mapper>

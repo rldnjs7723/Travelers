@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.travelers.user.model.mapper.UserMapper">
+
+	<resultMap type="AttractionDto" id="attraction">
+		<result column="content_id" property="contentId"/>
+		<result column="content_type_id" property="contentTypeId"/>
+		<result column="title" property="title"/>
+		<result column="addr1" property="addr1"/>
+		<result column="addr2" property="addr2"/>
+		<result column="zipcode" property="zipcode"/>
+		<result column="tel" property="tel"/>
+		<result column="first_image" property="image1"/>
+		<result column="first_image2" property="image2"/>
+		<result column="readcount" property="readcount"/>
+		<result column="sido_code" property="sidoCode"/>
+		<result column="gugun_code" property="gugunCode"/>
+		<result column="latitude" property="latitude"/>
+		<result column="longitude" property="longitude"/>
+		<result column="mlevel" property="mlevel"/>
+		<result column="overview" property="overview"/>
+		<result column="create_time" property="createTime"/>
+		<result column="modify_time" property="modifyTime"/>
+	</resultMap>
+	
+	<resultMap type="UserDto" id="userInfo">
+		<result column="email" property="email"/>
+		<result column="password" property="password"/>
+		<result column="password_salt" property="passwordSalt"/>
+		<result column="name" property="name"/>
+		<result column="id" property="id"/>
+	</resultMap>
+
+	<select id="idCheck" resultType="int">
+		select COUNT(email) from user
+		where id = #{id}
+	</select>
+
+	<select id="emailCheck" resultType="int">
+		select COUNT(email) from user
+		where email = #{email}
+	</select>
+
+	<select id="phoneCheck" resultType="int">
+		select COUNT(email) from user
+		where phone = #{phone}
+	</select>
+	
+	<insert id="joinUser">
+		insert into user(email, password, password_salt, name, id, phone)
+		values(#{email}, #{password}, #{passwordSalt}, #{name}, #{id}, #{phone})
+	</insert>
+	
+	<select id="getUser" resultMap="userInfo">
+		select * from user
+		where email = #{email}
+	</select>
+
+	<select id="getUserPhone" resultMap="userInfo">
+		select * from user
+		where phone = #{phone}
+	</select>
+	
+	<update id="modifyUser">
+		update user
+		set password = #{password}, token = #{token}, phone = #{phone}
+		where email = #{email}
+	</update>
+	
+	<delete id="deleteUser">
+		delete from user
+		where email = #{email} and password = #{password}
+	</delete>
+
+	<insert id="insertAttractionBookmark">
+		insert into attraction_bookmark(email, content_id)
+		values(#{email}, #{contentId})
+	</insert>
+
+	<delete id="deleteAttractionBookmark">
+		delete from attraction_bookmark
+		where email = #{email} and content_id = #{contentId}
+	</delete>
+
+	<select id="getAttractionBookmark" resultMap="attraction">
+		select ai.*, ad.*, detail.*
+		from attraction_bookmark
+		join attraction_info ai
+		using(content_id)
+		join attraction_description ad
+		using(content_id)
+		join attraction_detail detail
+		using(content_id)
+		where email = #{email}
+	</select>
+
+	<resultMap type="UserDto" id="userInfoModify" extends="userInfo">
+		<collection property="profileImgInfo" column="id" javaType="list" ofType="fileInfoDto" select="fileInfo"/>
+	</resultMap>
+
+	<resultMap type="fileInfoDto" id="file">
+		<result column="save_folder" property="saveFolder"/>
+		<result column="original_file" property="originalFile"/>
+		<result column="save_file" property="saveFile"/>
+	</resultMap>
+
+	<select id="fileInfo" resultMap="file">
+		select save_folder, original_file, save_file
+		from file_info
+		where `id` = #{id}
+		order by `idx` desc
+		limit 1
+	</select>
+
+	<insert id="registerFile" parameterType="UserDto">
+		insert into `file_info` (id, save_folder, original_file, save_file)
+		values
+		<foreach collection="profileImgInfo" item="fileinfo" separator=" , ">
+			(#{id}, #{fileinfo.saveFolder}, #{fileinfo.originalFile}, #{fileinfo.saveFile})
+		</foreach>
+	</insert>
+
+</mapper>
